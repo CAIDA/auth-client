@@ -1,52 +1,95 @@
 #!/usr/bin/env python3
 # python character encoding: utf-8
+# Usage: offline_query.py [{refresh_token_file}]
 
 import sys
 import time
 import requests
-import urllib
 import json
 from requests_oauthlib import OAuth2Session
 
-if len(sys.argv) != 2:
-    print("usage: offline_query.py {refresh_token}")
-    sys.exit(2)
 
-# Keycloak parameters
+# Optional function to support Device Flow.  If we don't already have a
+# refresh token, we can use this to prompt the user to visit a URL to
+# authorize this client.  Then we can fetch a refresh token from the auth
+# server.
+# (We implement this here because requests_oauthlib does not.  Other libraries
+# in other languages may already implement this feature.)
+def auth_device_flow(token_updater, auth_url, client_id, scope):
+    rs = requests.Session() # session for getting refresh token
+    response = rs.post(auth_url + "/auth/device",
+        data={ "client_id": client_id, "scope": scope },
+        allow_redirects=False)
+    dev_res = response.json()
+    expires = time.time() + dev_res['expires_in']
+    print("\nTo authorize this client, use any web brower to visit:\n   ",
+            dev_res['verification_uri_complete'])
+    print("\nWaiting for authorization...", end="", flush=True)
+    while True:
+        time.sleep(dev_res['interval'])
+        print(".", end="", flush=True)
+        response = rs.post(auth_url + "/token", data={
+            "client_id": client_id,
+            "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+            "device_code": dev_res['device_code'],
+            })
+        token_res = response.json()
+        if response.status_code == 400 and \
+                token_res["error"] == "authorization_pending":
+            continue
+        print()
+        if response.status_code == 200:
+            token_updater(token_res)
+            return True
+        print(f"\nStatus: {response.status_code}\n{response.text}")
+        return False
+
+
+# authorization parameters
 auth_url = 'https://auth.caida.org/realms/CAIDA_TEST/protocol/openid-connect'
 client_id = "river-offline"
+scope = "openid offline_access"
+manual_auth = False
 
 # service parameters
 api_url = "https://river.caida.org:8081/test"
+verify_ssl = True  # True normally; False for testing with self-signed cert
 
 
-def token_updater(tokens):
-    # Save the received tokens for reuse
-    print("#### token_updater: ", json.dumps(tokens, indent=2))
-    token_params = tokens
+def update_token_info(new_token_info):
+    # Save the received refresh token for reuse
+    if token_filename:
+        with open(token_filename, "w") as f:
+            f.write(new_token_info['refresh_token'])
+    # print("#### update_token_info: ", json.dumps(new_token_info, indent=2))
+    token_info.clear()
+    token_info.update(new_token_info)
 
 data = b"{foo:'bar'}"
 headers = {
     'Content-type': 'application/json; charset=utf-8'
 }
 
-token_params = {
-    'access_token': '0',
+token_info = {
+    'access_token': 'dummy value for oauthlib',
     'refresh_token': None,
-    # below are needed by requests_oauthlib
-    'token_type': 'Bearer',
-    'expires_in': '-1'
+    'expires_in': '-1' # tell OAuth2Session: access_token needs to be refreshed
 }
 
-# load refresh token from file
-#with open(sys.argv[3], "rb") as f:
-#    token_params['refresh_token'] = str(f.read().strip(), 'ascii')
+token_filename = sys.argv[1] if len(sys.argv) > 1 else None
 
-# read refresh token from cmdline
-token_params['refresh_token'] = sys.argv[1]
+if token_filename:
+    # load refresh token from file
+    try:
+        with open(token_filename, "r") as f:
+            token_info['refresh_token'] = f.read().strip()
+    except FileNotFoundError as e:
+        pass
 
-verify_ssl = False  # True normally; False for testing with self-signed cert
-manual_auth = False
+# If we didn't get a refresh_token above, start a Device Flow to get one.
+if not token_info['refresh_token']:
+    if not auth_device_flow(update_token_info, auth_url, client_id, scope):
+        sys.exit(1)
 
 # request access token from auth server
 if manual_auth:
@@ -55,40 +98,38 @@ if manual_auth:
     # token once up front to get an access token.  This is fine if we only
     # need to make one protected query, or even multiple queries before the
     # access token expires (~300s), but a long-lived process that makes
-    # multiple queries will need additional code to periodically refresh the
-    # access token.  (Refreshing before every query would technically work,
-    # but would be very inefficient.)
+    # multiple queries will need additional code to refresh the access token
+    # if it expires.
     session = requests.Session()
-    query_params = {
+    authdata = {
         "client_id": client_id,
-        "refresh_token": token_params['refresh_token'],
-        "scope": "openid offline_access",
+        "refresh_token": token_info['refresh_token'],
+        "scope": scope,
         "grant_type": "refresh_token",
     }
 
     endpoint = '/token'
     authheaders = {'Content-type': 'application/x-www-form-urlencoded'}
-    authdata = urllib.parse.urlencode(query_params)
-    print(f"\n#### {endpoint}: {authdata}\n")
     response = session.post(auth_url + endpoint, data=authdata,
         headers=authheaders, allow_redirects=False)
 
     if response.status_code < 200 or response.status_code > 299:
         print(response.text)
         exit(1)
-    r = json.loads(response.text)
-    token_params['access_token'] = r['access_token']
-    headers['Authorization'] = f'Bearer {token_params["access_token"]}'
+    r = response.json()
+    token_info['access_token'] = r['access_token']
+    headers['Authorization'] = f'Bearer {token_info["access_token"]}'
 
 else:
     # Recommended method for python: use requests-oauthlib.  After the session
     # is created, each session.get() or session.post() will automatically
     # use the refresh token to refresh the access token as needed.
+
     session = OAuth2Session(client_id=client_id,
-            token=token_params,
+            token=token_info,
             auto_refresh_url=(auth_url+'/token'),
             auto_refresh_kwargs={'client_id':client_id},
-            token_updater=token_updater)
+            token_updater=update_token_info)
 
 
 print("Request headers:  %r" % (headers,))
