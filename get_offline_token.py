@@ -8,7 +8,7 @@ import time
 import requests
 import argparse
 
-DEFAULT_AUTH_URL = 'https://auth.caida.org/realms/CAIDA_TEST/protocol/openid-connect'
+DEFAULT_REALM = 'CAIDA'
 DEFAULT_SCOPE = "openid offline_access"
 
 # Prompt the user to visit a URL to create an offline token.  Then fetch it
@@ -18,6 +18,9 @@ def auth_device_flow(auth_url, client_id, scope):
     response = rs.post(auth_url + "/auth/device",
         data={ "client_id": client_id, "scope": scope },
         allow_redirects=False)
+    if response.status_code != 200:
+        print(f"\nStatus: {response.status_code}\n{response.text}")
+        return False
     dev_res = response.json()
     expires = time.time() + dev_res['expires_in']
     print("\nTo authorize this client, use any web brower to visit:\n   ",
@@ -42,6 +45,9 @@ def auth_device_flow(auth_url, client_id, scope):
         print(f"\nStatus: {response.status_code}\n{response.text}")
         return False
 
+def default_auth_url(realm):
+    return f'https://auth.caida.org/realms/{realm}/protocol/openid-connect'
+
 parser = argparse.ArgumentParser(description=
     "Get an offline token")
 parser.add_argument("client_id",
@@ -49,9 +55,12 @@ parser.add_argument("client_id",
 parser.add_argument("token_file",
     nargs='?',
     help="name of offline token file (default: {CLIENT_ID}.tok)")
+parser.add_argument("--realm", "-r",
+    metavar='REALM', default=DEFAULT_REALM,
+    help=f"Authorization realm (default: {DEFAULT_REALM})")
 parser.add_argument("--auth_url", "-a",
-    metavar='AUTH_URL', default=DEFAULT_AUTH_URL,
-    help=f"Authorization URL (default: {DEFAULT_AUTH_URL})")
+    metavar='AUTH_URL',
+    help=f"Authorization URL (default: {default_auth_url('{REALM}')})")
 parser.add_argument("--scope", "-s",
     metavar='SCOPE', default=DEFAULT_SCOPE,
     help=f"Authorization scope (default: {DEFAULT_SCOPE})")
@@ -59,6 +68,8 @@ args = parser.parse_args()
 
 if not args.token_file:
     args.token_file = args.client_id + ".tok"
+if not args.auth_url:
+    args.auth_url = default_auth_url(args.realm)
 
 def update_token_info(new_token_info):
     # Save the received refresh token for reuse
