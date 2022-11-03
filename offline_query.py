@@ -3,9 +3,7 @@
 # Usage: offline_query.py [{refresh_token_file}]
 
 import sys
-import time
 import requests
-import json
 from requests_oauthlib import OAuth2Session
 
 # authorization parameters
@@ -20,7 +18,6 @@ verify_ssl = True  # True normally; False for testing with self-signed cert
 
 
 def update_token_info(new_token_info):
-    # print("#### update_token_info: ", json.dumps(new_token_info, indent=2))
     token_info.clear()
     token_info.update(new_token_info)
 
@@ -63,7 +60,7 @@ if manual_auth:
 
     if response.status_code < 200 or response.status_code > 299:
         print(response.text)
-        exit(1)
+        sys.exit(1)
     r = response.json()
     token_info['access_token'] = r['access_token']
     headers['Authorization'] = f'Bearer {token_info["access_token"]}'
