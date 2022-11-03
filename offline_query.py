@@ -8,43 +8,6 @@ import requests
 import json
 from requests_oauthlib import OAuth2Session
 
-
-# Optional function to support Device Flow.  If we don't already have a
-# refresh token, we can use this to prompt the user to visit a URL to
-# authorize this client.  Then we can fetch a refresh token from the auth
-# server.
-# (We implement this here because requests_oauthlib does not.  Other libraries
-# in other languages may already implement this feature.)
-def auth_device_flow(token_updater, auth_url, client_id, scope):
-    rs = requests.Session() # session for getting refresh token
-    response = rs.post(auth_url + "/auth/device",
-        data={ "client_id": client_id, "scope": scope },
-        allow_redirects=False)
-    dev_res = response.json()
-    expires = time.time() + dev_res['expires_in']
-    print("\nTo authorize this client, use any web brower to visit:\n   ",
-            dev_res['verification_uri_complete'])
-    print("\nWaiting for authorization...", end="", flush=True)
-    while True:
-        time.sleep(dev_res['interval'])
-        print(".", end="", flush=True)
-        response = rs.post(auth_url + "/token", data={
-            "client_id": client_id,
-            "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
-            "device_code": dev_res['device_code'],
-            })
-        token_res = response.json()
-        if response.status_code == 400 and \
-                token_res["error"] == "authorization_pending":
-            continue
-        print()
-        if response.status_code == 200:
-            token_updater(token_res)
-            return True
-        print(f"\nStatus: {response.status_code}\n{response.text}")
-        return False
-
-
 # authorization parameters
 auth_url = 'https://auth.caida.org/realms/CAIDA_TEST/protocol/openid-connect'
 client_id = "river-offline"
@@ -57,10 +20,6 @@ verify_ssl = True  # True normally; False for testing with self-signed cert
 
 
 def update_token_info(new_token_info):
-    # Save the received refresh token for reuse
-    if token_filename:
-        with open(token_filename, "w") as f:
-            f.write(new_token_info['refresh_token'])
     # print("#### update_token_info: ", json.dumps(new_token_info, indent=2))
     token_info.clear()
     token_info.update(new_token_info)
@@ -76,20 +35,9 @@ token_info = {
     'expires_in': '-1' # tell OAuth2Session: access_token needs to be refreshed
 }
 
-token_filename = sys.argv[1] if len(sys.argv) > 1 else None
-
-if token_filename:
-    # load refresh token from file
-    try:
-        with open(token_filename, "r") as f:
-            token_info['refresh_token'] = f.read().strip()
-    except FileNotFoundError as e:
-        pass
-
-# If we didn't get a refresh_token above, start a Device Flow to get one.
-if not token_info['refresh_token']:
-    if not auth_device_flow(update_token_info, auth_url, client_id, scope):
-        sys.exit(1)
+token_filename = sys.argv[1]
+with open(token_filename, "r") as f:
+    token_info['refresh_token'] = f.read().strip()
 
 # request access token from auth server
 if manual_auth:
