@@ -23,7 +23,8 @@ def auth_device_flow(auth_url, client_id, scope):
         return False
     dev_res = response.json()
     expires = time.time() + dev_res['expires_in']
-    print("\nTo authorize this client, use any web brower to visit:\n   ",
+    print("\nTo authorize the creation of an offline token, "
+            "use any web brower on any device to visit:\n   ",
             dev_res['verification_uri_complete'])
     print("\nWaiting for authorization...", end="", flush=True)
     while True:
@@ -51,17 +52,17 @@ def default_auth_url(realm):
 parser = argparse.ArgumentParser(description=
     "Get an offline token")
 parser.add_argument("client_id",
-    help=f"OIDC client id")
+    help=f"OIDC client id (e.g. 'myapp-api')")
 parser.add_argument("token_file",
     nargs='?',
-    help="name of offline token file (default: {CLIENT_ID}.tok)")
-parser.add_argument("--realm", "-r",
+    help="name of file to save offline token (default: {CLIENT_ID}.tok)")
+parser.add_argument("-r", "--realm",
     metavar='REALM', default=DEFAULT_REALM,
     help=f"Authorization realm (default: {DEFAULT_REALM})")
-parser.add_argument("--auth_url", "-a",
+parser.add_argument("-a", "--auth_url",
     metavar='AUTH_URL',
     help=f"Authorization URL (default: {default_auth_url('{REALM}')})")
-parser.add_argument("--scope", "-s",
+parser.add_argument("-s", "--scope",
     metavar='SCOPE', default=DEFAULT_SCOPE,
     help=f"Authorization scope (default: {DEFAULT_SCOPE})")
 args = parser.parse_args()
