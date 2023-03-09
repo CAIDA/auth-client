@@ -17,7 +17,7 @@ def auth_device_flow(auth_url, client_id, scope):
     rs = requests.Session() # session for getting refresh token
     response = rs.post(auth_url + "/auth/device",
         data={ "client_id": client_id, "scope": scope },
-        allow_redirects=False)
+        allow_redirects=False, verify=args.ssl_verify)
     if response.status_code != 200:
         print(f"\nStatus: {response.status_code}\n{response.text}")
         return False
@@ -34,7 +34,7 @@ def auth_device_flow(auth_url, client_id, scope):
             "client_id": client_id,
             "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
             "device_code": dev_res['device_code'],
-            })
+            }, verify=args.ssl_verify)
         token_res = response.json()
         if response.status_code == 400 and \
                 token_res["error"] == "authorization_pending":
@@ -65,6 +65,9 @@ parser.add_argument("-a", "--auth_url",
 parser.add_argument("-s", "--scope",
     metavar='SCOPE', default=DEFAULT_SCOPE,
     help=f"Authorization scope (default: {DEFAULT_SCOPE})")
+parser.add_argument("--no-verify",
+    dest='ssl_verify', default=True, action='store_false',
+    help=f"Disable SSL host verification")
 args = parser.parse_args()
 
 if not args.token_file:
