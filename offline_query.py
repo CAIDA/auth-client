@@ -1,27 +1,52 @@
 #!/usr/bin/env python3
 # python character encoding: utf-8
-# Usage: offline_query.py [{refresh_token_file}]
 
 import sys
+import os
+import argparse
 import requests
 from requests_oauthlib import OAuth2Session
 
-# authorization parameters
-auth_url = 'https://auth.caida.org/realms/CAIDA_TEST/protocol/openid-connect'
-client_id = "river-offline"
-scope = "openid offline_access"
+DEFAULT_SCOPE = "openid offline_access"
+DEFAULT_REALM = 'CAIDA'
 manual_auth = False
 
-# service parameters
-api_url = "https://river.caida.org:8081/test"
-verify_ssl = True  # True normally; False for testing with self-signed cert
 
+def default_auth_url(realm):
+    return f'https://auth.caida.org/realms/{realm}/protocol/openid-connect'
+
+parser = argparse.ArgumentParser(
+    description='Make a request to a protected CAIDA service.')
+parser.add_argument("client_id",
+    help="OIDC client id (e.g. 'myapp-offline')")
+parser.add_argument("-t", "--token-file",
+    help="name of file containing offline token (default: {CLIENT_ID}.tok)")
+parser.add_argument("-r", "--realm", default=DEFAULT_REALM,
+    help="Authorization realm (default: %(default)s)")
+parser.add_argument("-a", "--auth-url",
+    help=f"Authorization URL (default: {default_auth_url('{REALM}')})")
+parser.add_argument("-s", "--scope", default=DEFAULT_SCOPE,
+    help="Authorization scope (default: %(default)s)")
+parser.add_argument("-X", "--method", default='GET',
+    help="Query method (default: %(default)s)")
+parser.add_argument("-d", "--data", type=os.fsencode,
+    help="JSON query data (with -X POST or -X PUT)")
+parser.add_argument("--no-verify", default=True,
+    dest='ssl_verify', action='store_false',
+    help="Disable SSL host verification")
+parser.add_argument("query",
+    help="Query URL")
+args = parser.parse_args()
+
+if args.token_file is None:
+    args.token_file = args.client_id + ".tok"
+if args.auth_url is None:
+    args.auth_url = default_auth_url(args.realm)
 
 def update_token_info(new_token_info):
     token_info.clear()
     token_info.update(new_token_info)
 
-data = b"{foo:'bar'}"
 headers = {
     'Content-type': 'application/json; charset=utf-8'
 }
@@ -32,8 +57,7 @@ token_info = {
     'expires_in': '-1' # tell OAuth2Session: access_token needs to be refreshed
 }
 
-token_filename = sys.argv[1]
-with open(token_filename, "r") as f:
+with open(args.token_file, "r") as f:
     token_info['refresh_token'] = f.read().strip()
 
 # request access token from auth server
@@ -47,15 +71,14 @@ if manual_auth:
     # if it expires.
     session = requests.Session()
     authdata = {
-        "client_id": client_id,
+        "client_id": args.client_id,
         "refresh_token": token_info['refresh_token'],
-        "scope": scope,
+        "scope": args.scope,
         "grant_type": "refresh_token",
     }
 
-    endpoint = '/token'
     authheaders = {'Content-type': 'application/x-www-form-urlencoded'}
-    response = session.post(auth_url + endpoint, data=authdata,
+    response = session.post(args.auth_url + '/token', data=authdata,
         headers=authheaders, allow_redirects=False)
 
     if response.status_code < 200 or response.status_code > 299:
@@ -70,19 +93,20 @@ else:
     # is created, each session.get() or session.post() will automatically
     # use the refresh token to refresh the access token as needed.
 
-    session = OAuth2Session(client_id=client_id,
+    session = OAuth2Session(client_id=args.client_id,
             token=token_info,
-            auto_refresh_url=(auth_url+'/token'),
-            auto_refresh_kwargs={'client_id':client_id},
+            auto_refresh_url=(args.auth_url+'/token'),
+            auto_refresh_kwargs={'client_id':args.client_id},
             token_updater=update_token_info)
 
 
+# Make the request
 print("Request headers:  %r" % (headers,))
-print("Request data:  %r" % (data,))
+print("Request data:  %r" % (args.data,))
 print()
 
-# Make the request
-response = session.get(api_url + "/measurement", data=data, headers=headers, verify=verify_ssl)
+response = session.request(args.method, args.query, data=args.data,
+        headers=headers, verify=args.ssl_verify)
 print("\x1b[31mHTTP response status: %r\x1b[m" % (response.status_code,))
 print("HTTP response headers: %r" % (response.headers,))
 print("HTTP response text:")
