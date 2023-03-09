@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 # python character encoding: utf-8
-# Usage: get_offline_token.py {refresh_token_file}
 
 import sys
 import os
 import time
-import requests
 import argparse
+import requests
 
 DEFAULT_REALM = 'CAIDA'
 DEFAULT_SCOPE = "openid offline_access"
 
-# Prompt the user to visit a URL to create an offline token.  Then fetch it
-# from the auth server.
+# Prompt the user to visit a URL to create an offline token.  Then poll
+# the auth server until it's available.
 def auth_device_flow(auth_url, client_id, scope):
     rs = requests.Session() # session for getting refresh token
     response = rs.post(auth_url + "/auth/device",
@@ -22,9 +21,8 @@ def auth_device_flow(auth_url, client_id, scope):
         print(f"\nStatus: {response.status_code}\n{response.text}")
         return False
     dev_res = response.json()
-    expires = time.time() + dev_res['expires_in']
     print("\nTo authorize the creation of an offline token, "
-            "use any web brower on any device to visit:\n   ",
+            "use any web browser on any device to visit:\n   ",
             dev_res['verification_uri_complete'])
     print("\nWaiting for authorization...", end="", flush=True)
     while True:
@@ -57,22 +55,21 @@ parser.add_argument("token_file",
     nargs='?',
     help="name of file to save offline token (default: {CLIENT_ID}.tok)")
 parser.add_argument("-r", "--realm",
-    metavar='REALM', default=DEFAULT_REALM,
+    default=DEFAULT_REALM,
     help=f"Authorization realm (default: {DEFAULT_REALM})")
-parser.add_argument("-a", "--auth_url",
-    metavar='AUTH_URL',
+parser.add_argument("-a", "--auth-url",
     help=f"Authorization URL (default: {default_auth_url('{REALM}')})")
 parser.add_argument("-s", "--scope",
-    metavar='SCOPE', default=DEFAULT_SCOPE,
+    default=DEFAULT_SCOPE,
     help=f"Authorization scope (default: {DEFAULT_SCOPE})")
 parser.add_argument("--no-verify",
     dest='ssl_verify', default=True, action='store_false',
     help=f"Disable SSL host verification")
 args = parser.parse_args()
 
-if not args.token_file:
+if args.token_file is None:
     args.token_file = args.client_id + ".tok"
-if not args.auth_url:
+if args.auth_url is None:
     args.auth_url = default_auth_url(args.realm)
 
 def update_token_info(new_token_info):
