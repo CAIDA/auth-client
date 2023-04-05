@@ -21,7 +21,7 @@ setuptools.setup(
     python_requires='>=3.6',
     entry_points={
         'console_scripts': [
-            'get_offline_token=caida_client.get_offline_token:main'
+            'get_offline_token=caida_client.get_offline_token:main',
             'offline_query=caida_client.offline_query:main'
         ]
     },
