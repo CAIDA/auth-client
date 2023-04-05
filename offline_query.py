@@ -17,8 +17,6 @@ def default_auth_url(realm):
 
 parser = argparse.ArgumentParser(
     description='Make a request to a protected CAIDA service.')
-parser.add_argument("client_id",
-    help="OIDC client id (e.g. 'myapp-offline')")
 parser.add_argument("-t", "--token-file",
     help="name of file containing offline token (default: {CLIENT_ID}.tok)")
 parser.add_argument("-r", "--realm", default=DEFAULT_REALM,
@@ -34,8 +32,12 @@ parser.add_argument("-d", "--data", type=os.fsencode,
 parser.add_argument("--no-verify", default=True,
     dest='ssl_verify', action='store_false',
     help="Disable SSL host verification")
+parser.add_argument("client_id",
+    metavar="CLIENT_ID",
+    help="OIDC client id (e.g. 'myapp-offline')")
 parser.add_argument("query",
-    help="Query URL")
+    metavar="QUERY",
+    help="Query URL (e.g. 'https://api.myapp.caida.org/v1/foo')")
 args = parser.parse_args()
 
 if args.token_file is None:
@@ -101,14 +103,16 @@ else:
 
 
 # Make the request
-print("Request headers:  %r" % (headers,))
-print("Request data:  %r" % (args.data,))
-print()
+print("Request headers:  %r" % (headers,), file=sys.stderr)
+print("Request data:  %r" % (args.data,), file=sys.stderr)
+print("", file=sys.stderr)
 
 response = session.request(args.method, args.query, data=args.data,
         headers=headers, verify=args.ssl_verify)
-print("\x1b[31mHTTP response status: %r\x1b[m" % (response.status_code,))
-print("HTTP response headers: %r" % (response.headers,))
-print("HTTP response text:")
+print("\x1b[31mHTTP response status: %r\x1b[m" % (response.status_code,),
+        file=sys.stderr)
+print("HTTP response headers: %r" % (response.headers,), file=sys.stderr)
+print("HTTP response text:", file=sys.stderr)
+sys.stderr.flush()
 print(response.text)
 
