@@ -50,9 +50,10 @@ def default_auth_url(realm):
 parser = argparse.ArgumentParser(description=
     "Get an offline token")
 parser.add_argument("client_id",
+    metavar='CLIENT_ID',
     help=f"OIDC client id (e.g. 'myapp-api')")
 parser.add_argument("token_file",
-    nargs='?',
+    nargs='?', metavar='TOKEN_FILE',
     help="name of file to save offline token (default: {CLIENT_ID}.tok)")
 parser.add_argument("-r", "--realm",
     default=DEFAULT_REALM,
