@@ -27,6 +27,8 @@ parser.add_argument("-s", "--scope", default=DEFAULT_SCOPE,
     help="Authorization scope (default: %(default)s)")
 parser.add_argument("-X", "--method", default='GET',
     help="Query method (default: %(default)s)")
+parser.add_argument("--datafile",
+    help="name of file contaning JSON query data, or '-' for stdin (with -X POST or -X PUT)")
 parser.add_argument("-d", "--data", type=os.fsencode,
     help="JSON query data (with -X POST or -X PUT)")
 parser.add_argument("--no-verify", default=True,
@@ -44,6 +46,14 @@ if args.token_file is None:
     args.token_file = args.client_id + ".tok"
 if args.auth_url is None:
     args.auth_url = default_auth_url(args.realm)
+
+if not args.datafile:
+    data = args.data
+elif args.datafile == '-':
+    data = sys.stdin.read()
+else:
+    with open(args.datafile) as f:
+        data = f.read()
 
 def update_token_info(new_token_info):
     token_info.clear()
@@ -103,12 +113,12 @@ else:
 
 
 # Make the request
-print("Request headers:  %r" % (headers,), file=sys.stderr)
-print("Request data:  %r" % (args.data,), file=sys.stderr)
-print("", file=sys.stderr)
-
-response = session.request(args.method, args.query, data=args.data,
+# print("Request headers:  %r" % (headers,), file=sys.stderr)
+# print("Request data:  %r" % (data,), file=sys.stderr)
+# print("", file=sys.stderr)
+response = session.request(args.method, args.query, data=data,
         headers=headers, verify=args.ssl_verify)
+
 print("\x1b[31mHTTP response status: %r\x1b[m" % (response.status_code,),
         file=sys.stderr)
 print("HTTP response headers: %r" % (response.headers,), file=sys.stderr)
