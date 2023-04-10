@@ -5,6 +5,7 @@ import sys
 import os
 import time
 import argparse
+import json
 import requests
 
 DEFAULT_REALM = 'CAIDA'
@@ -42,7 +43,7 @@ def auth_device_flow(auth_url, client_id, scope):
             continue
         print()
         if response.status_code == 200:
-            update_token_info(token_res)
+            save_tokens(token_res)
             return True
         print(f"\nStatus: {response.status_code}\n{response.text}")
         return False
@@ -50,11 +51,11 @@ def auth_device_flow(auth_url, client_id, scope):
 def default_auth_url(realm):
     return f'https://auth.caida.org/realms/{realm}/protocol/openid-connect'
 
-def update_token_info(new_token_info):
-    # Save the received refresh token for reuse
-    os.umask(0o077)
+def save_tokens(new_token_info):
+    oldmask = os.umask(0o077)
     with open(g.args.token_file, "w") as f:
-        f.write(new_token_info['refresh_token'])
+        json.dump(new_token_info, f)
+    os.umask(oldmask)
 
 def main():
     parser = argparse.ArgumentParser(description=
@@ -79,7 +80,7 @@ def main():
     g.args = parser.parse_args()
 
     if g.args.token_file is None:
-        g.args.token_file = g.args.client_id + ".tok"
+        g.args.token_file = g.args.client_id + ".token"
     if g.args.auth_url is None:
         g.args.auth_url = default_auth_url(g.args.realm)
 

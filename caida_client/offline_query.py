@@ -4,6 +4,8 @@
 import sys
 import os
 import argparse
+import time
+import json
 import requests
 from requests_oauthlib import OAuth2Session
 
@@ -18,15 +20,22 @@ class g: # global variables
 def default_auth_url(realm):
     return f'https://auth.caida.org/realms/{realm}/protocol/openid-connect'
 
-def update_token_info(new_token_info):
-    g.token_info.clear()
-    g.token_info.update(new_token_info)
+def save_tokens(new_token_info):
+    oldmask = os.umask(0o077)
+    with open(g.args.token_file, "w") as f:
+        json.dump(new_token_info, f)
+    os.umask(oldmask)
+    print(f"### Saved new tokens to {g.args.token_file}", file=sys.stderr)
 
 def main():
     parser = argparse.ArgumentParser(
         description='Make a request to a protected CAIDA service.')
     parser.add_argument("-t", "--token-file",
         help="name of file containing offline token (default: {CLIENT_ID}.token)")
+    parser.add_argument("--force-refresh",
+        action='store_true',
+        help="get a new access token even if the one in TOKEN_FILE is not "
+            "expired (useful after an 'invalid token' error)")
     parser.add_argument("-r", "--realm", default=DEFAULT_REALM,
         help="Authorization realm (default: %(default)s)")
     parser.add_argument("-a", "--auth-url",
@@ -51,7 +60,7 @@ def main():
     g.args = parser.parse_args()
 
     if g.args.token_file is None:
-        g.args.token_file = g.args.client_id + ".tok"
+        g.args.token_file = g.args.client_id + ".token"
     if g.args.auth_url is None:
         g.args.auth_url = default_auth_url(g.args.realm)
 
@@ -67,14 +76,21 @@ def main():
         'Content-type': 'application/json; charset=utf-8'
     }
 
-    g.token_info = {
-        'access_token': 'dummy value for oauthlib',
-        'refresh_token': None,
-        'expires_in': '-1' # tell OAuth2Session: access_token needs to be refreshed
-    }
-
     with open(g.args.token_file, "r") as f:
-        g.token_info['refresh_token'] = f.read().strip()
+        g.token_info = json.load(f)
+    if g.args.force_refresh or 'expires_in' not in g.token_info:
+        refresh_token = g.token_info['refresh_token']
+        g.token_info.clear()
+        g.token_info['refresh_token'] = refresh_token
+        g.token_info['expires_in'] = -1
+        g.token_info['access_token'] = 'dummy value for oauthlib'
+    else:
+        # Assume the access token was issued shortly before the file
+        # modification time.  (Parsing the JWT access token for its "iat"
+        # value would be more reliable, but harder.)
+        age = time.time() - (os.path.getmtime(g.args.token_file) - 5)
+        g.token_info['expires_in'] -= age
+    print("### expires_in=%r" % (g.token_info['expires_in'],), file=sys.stderr) # XXX
 
     # request access token from auth server
     if manual_auth:
@@ -86,22 +102,28 @@ def main():
         # multiple queries will need additional code to refresh the access token
         # if it expires.
         session = requests.Session()
-        authdata = {
-            "client_id": g.args.client_id,
-            "refresh_token": g.token_info['refresh_token'],
-            "scope": g.args.scope,
-            "grant_type": "refresh_token",
-        }
 
-        authheaders = {'Content-type': 'application/x-www-form-urlencoded'}
-        response = session.post(g.args.auth_url + '/token', data=authdata,
-            headers=authheaders, allow_redirects=False)
+        if not 'access_token' in g.token_info or g.token_info['expires_in'] <= 0:
+            print(f"### getting new access token", file=sys.stderr)
+            authdata = {
+                "client_id": g.args.client_id,
+                "refresh_token": g.token_info['refresh_token'],
+                "scope": g.args.scope,
+                "grant_type": "refresh_token",
+            }
 
-        if response.status_code < 200 or response.status_code > 299:
-            print(response.text)
-            sys.exit(1)
-        r = response.json()
-        g.token_info['access_token'] = r['access_token']
+            authheaders = {'Content-type': 'application/x-www-form-urlencoded'}
+            response = session.post(g.args.auth_url + '/token', data=authdata,
+                headers=authheaders, allow_redirects=False)
+
+            if response.status_code < 200 or response.status_code > 299:
+                print(response.text)
+                sys.exit(1)
+            g.token_info = response.json()
+            save_tokens(g.token_info)
+        else:
+            print(f"### using stored access token", file=sys.stderr)
+
         headers['Authorization'] = f'Bearer {g.token_info["access_token"]}'
 
     else:
@@ -113,7 +135,7 @@ def main():
                 token=g.token_info,
                 auto_refresh_url=(g.args.auth_url+'/token'),
                 auto_refresh_kwargs={'client_id':g.args.client_id},
-                token_updater=update_token_info)
+                token_updater=save_tokens)
 
 
     # Make the request
