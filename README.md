@@ -14,16 +14,17 @@ For more information, see the
 [Python packaging guide](https://packaging.python.org/en/latest/tutorials/installing-packages/).
 
 ## `get_offline_token`
-Get an offline token for use with `offline_query` or another client that connects to a
-protected CAIDA service.
+Get access and refresh tokens for use with `offline_query` or another client
+that connects to a protected CAIDA service.
 
 Typical usage:
 ```
 get_offline_token myapp-offline
 ```
-This will instruct you to visit a URL in a browser, where you can sign in to the CAIDA SSO system.
-Once you have done that, the script will store an offline token for client `myapp-offline`
-in the file `myapp-offline.tok`.
+This will instruct you to visit a URL in a browser, where you can sign in to
+the CAIDA SSO system.  Once you have done that, the script will store an
+access token and offline refresh token for client `myapp-offline` in the file
+`myapp-offline.token`.
 
 Run `get_offline_token --help` for more information.
 
@@ -32,9 +33,12 @@ Make an HTTP request to a protected CAIDA service.
 
 Typical usage:
 ```
-offline_query -t myapp-offline.tok myapp-offline https://api.myapp.caida.org/v1/foo
+offline_query -t myapp-offline.token myapp-offline https://api.myapp.caida.org/v1/foo
 ```
-This will use the offline token stored in `myapp-offline.tok` to fetch an OIDC access token,
-and then use that access token to query the given URL.
+This will use the OIDC access token stored in `myapp-offline.token` to query
+the given URL.
+But if the access token is expired, it will first use the refresh token
+to fetch an access token from the authorization server, and store the new
+access token in the file.
 
 Run `offline_query --help` for more information.
