@@ -29,7 +29,9 @@ def save_tokens(new_token_info):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Make a request to a protected CAIDA service.')
+        description='Make a request to a protected CAIDA service.',
+        epilog='If method is PUT or POST, and neither --data nor --datafile '
+            'are given, the request body will be read from standard input.')
     parser.add_argument("-t", "--token-file",
         help="name of file containing offline token (default: {CLIENT_ID}.token)")
     parser.add_argument("--force-refresh",
@@ -44,10 +46,10 @@ def main():
         help="Authorization scope (default: %(default)s)")
     parser.add_argument("-X", "--method", default='GET',
         help="Query method (default: %(default)s)")
-    parser.add_argument("--datafile",
-        help="name of file contaning JSON query data, or '-' for stdin (with -X POST or -X PUT)")
     parser.add_argument("-d", "--data", type=os.fsencode,
-        help="JSON query data (with -X POST or -X PUT)")
+        help="JSON request body")
+    parser.add_argument("--datafile",
+        help="name of file contaning JSON request body")
     parser.add_argument("--no-verify", default=True,
         dest='ssl_verify', action='store_false',
         help="Disable SSL host verification")
@@ -64,13 +66,16 @@ def main():
     if g.args.auth_url is None:
         g.args.auth_url = default_auth_url(g.args.realm)
 
-    if not g.args.datafile:
-        data = g.args.data
-    elif g.args.datafile == '-':
-        data = sys.stdin.read()
+    if g.args.method in ['PUT', 'POST']:
+        if g.args.data:
+            data = g.args.data
+        if g.args.datafile:
+            with open(g.args.datafile) as f:
+                data = f.read()
+        else:
+            data = sys.stdin.read()
     else:
-        with open(g.args.datafile) as f:
-            data = f.read()
+        data = None
 
     headers = {
         'Content-type': 'application/json; charset=utf-8'
