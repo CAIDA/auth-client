@@ -8,7 +8,7 @@ To find the client_id for a particular service, see the documentation for that s
 ## Installation
 
 ```
-python3 -m pip install git+https://github.org/CAIDA/auth/client.git
+python3 -m pip install git+https://github.com/CAIDA/auth/client.git
 ```
 For more information, see the
 [Python packaging guide](https://packaging.python.org/en/latest/tutorials/installing-packages/).
