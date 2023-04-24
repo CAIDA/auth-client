@@ -62,7 +62,7 @@ def main():
         "Get an offline token")
     parser.add_argument("client_id",
         metavar='CLIENT_ID',
-        help=f"OIDC client id (e.g. 'myapp-offline')")
+        help=f"OIDC client id (e.g. 'foobar-offline')")
     parser.add_argument("token_file",
         nargs='?', metavar='TOKEN_FILE',
         help="name of file to save offline token (default: {CLIENT_ID}.token)")

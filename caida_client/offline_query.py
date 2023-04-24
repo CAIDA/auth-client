@@ -30,7 +30,10 @@ def save_tokens(new_token_info):
 def main():
     parser = argparse.ArgumentParser(
         description='Make a request to a protected CAIDA service.',
-        epilog='If method is PUT or POST, and neither --data nor --datafile '
+        epilog=
+            'The response from the service will be written to standard output. '
+            'Any other diagnostic output will be written to standard error. '
+            'If method is PUT or POST, and neither --data nor --datafile '
             'are given, the request body will be read from standard input.')
     parser.add_argument("-t", "--token-file",
         help="name of file containing offline token (default: {CLIENT_ID}.token)")
@@ -45,7 +48,7 @@ def main():
     parser.add_argument("-s", "--scope", default=DEFAULT_SCOPE,
         help="Authorization scope (default: %(default)s)")
     parser.add_argument("-X", "--method", default='GET',
-        help="Query method (default: %(default)s)")
+        help="HTTP request method (default: %(default)s)")
     parser.add_argument("-d", "--data", type=os.fsencode,
         help="JSON request body")
     parser.add_argument("--datafile",
@@ -55,10 +58,10 @@ def main():
         help="Disable SSL host verification")
     parser.add_argument("client_id",
         metavar="CLIENT_ID",
-        help="OIDC client id (e.g. 'myapp-offline')")
+        help="OIDC client id (e.g. 'foobar-offline')")
     parser.add_argument("query",
         metavar="QUERY",
-        help="Query URL (e.g. 'https://api.myapp.caida.org/v1/foo')")
+        help="Query URL (e.g. 'https://api.foobar.caida.org/v1/foo')")
     g.args = parser.parse_args()
 
     if g.args.token_file is None:
