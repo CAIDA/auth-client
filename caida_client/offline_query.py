@@ -17,6 +17,9 @@ class g: # global variables
     args = None
     token_info = None
 
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
 def default_auth_url(realm):
     return f'https://auth.caida.org/realms/{realm}/protocol/openid-connect'
 
@@ -25,7 +28,7 @@ def save_tokens(new_token_info):
     with open(g.args.token_file, "w") as f:
         json.dump(new_token_info, f)
     os.umask(oldmask)
-    print(f"### Saved new tokens to {g.args.token_file}", file=sys.stderr)
+    eprint(f"### Saved new tokens to {g.args.token_file}")
 
 def main():
     parser = argparse.ArgumentParser(
@@ -98,7 +101,7 @@ def main():
         # value would be more reliable, but harder.)
         age = time.time() - (os.path.getmtime(g.args.token_file) - 5)
         g.token_info['expires_in'] -= age
-    print("### expires_in=%r" % (g.token_info['expires_in'],), file=sys.stderr) # XXX
+    eprint("### expires_in=%r" % (g.token_info['expires_in'],)) # XXX
 
     # request access token from auth server
     if manual_auth:
@@ -112,7 +115,7 @@ def main():
         session = requests.Session()
 
         if not 'access_token' in g.token_info or g.token_info['expires_in'] <= 0:
-            print(f"### getting new access token", file=sys.stderr)
+            eprint(f"### getting new access token")
             authdata = {
                 "client_id": g.args.client_id,
                 "refresh_token": g.token_info['refresh_token'],
@@ -130,7 +133,7 @@ def main():
             g.token_info = response.json()
             save_tokens(g.token_info)
         else:
-            print(f"### using stored access token", file=sys.stderr)
+            eprint(f"### using stored access token")
 
         headers['Authorization'] = f'Bearer {g.token_info["access_token"]}'
 
@@ -147,16 +150,15 @@ def main():
 
 
     # Make the request
-    # print("Request headers:  %r" % (headers,), file=sys.stderr)
-    # print("Request data:  %r" % (data,), file=sys.stderr)
-    # print("", file=sys.stderr)
+    # eprint("Request headers:  %r" % (headers,))
+    # eprint("Request data:  %r" % (data,))
+    # eprint("")
     response = session.request(g.args.method, g.args.query, data=data,
             headers=headers, verify=g.args.ssl_verify)
 
-    print("\x1b[31mHTTP response status: %r\x1b[m" % (response.status_code,),
-            file=sys.stderr)
-    print("HTTP response headers: %r" % (response.headers,), file=sys.stderr)
-    print("HTTP response text:", file=sys.stderr)
+    eprint("\x1b[31mHTTP response status: %r\x1b[m" % (response.status_code,))
+    eprint("HTTP response headers: %r" % (response.headers,))
+    eprint("HTTP response text:")
     sys.stderr.flush()
     print(response.text)
 
