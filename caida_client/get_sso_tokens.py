@@ -74,7 +74,7 @@ def default_auth_url(realm):
 
 def save_tokens(token_info):
     oldmask = os.umask(0o077)
-    if "expires_in" in token_info:
+    if "expires_at" not in token_info and "expires_in" in token_info:
         token_info["expires_at"] = time.time() + token_info["expires_in"]
     with open(g.args.token_file, "w") as f:
         json.dump(token_info, f)
