@@ -94,18 +94,12 @@ def main():
 
     with open(g.args.token_file, "r") as f:
         g.token_info = json.load(f)
-    if g.args.force_refresh or 'expires_in' not in g.token_info:
+    if g.args.force_refresh or 'expires_at' not in g.token_info:
         refresh_token = g.token_info['refresh_token']
         g.token_info.clear()
         g.token_info['refresh_token'] = refresh_token
         g.token_info['expires_in'] = -1
         g.token_info['access_token'] = 'dummy value for oauthlib'
-    else:
-        # Assume the access token was issued shortly before the file
-        # modification time.  (Parsing the JWT access token for its "iat"
-        # value would be more reliable, but harder.)
-        age = time.time() - (os.path.getmtime(g.args.token_file) - 5)
-        g.token_info['expires_in'] -= age
 
     # request access token from auth server
     if manual_auth:
