@@ -7,6 +7,7 @@ import time
 import argparse
 import json
 import requests
+import getpass
 
 DEFAULT_REALM = 'CAIDA'
 DEFAULT_SCOPE = "openid offline_access"
@@ -48,6 +49,26 @@ def auth_device_flow(auth_url, client_id, scope):
         print(f"\nStatus: {response.status_code}\n{response.text}")
         return False
 
+def auth_login_flow(auth_url, client_id, scope):
+    password = getpass.getpass(prompt=f'Password for {g.args.login} at {g.args.realm}: ')
+    authdata = {
+        "client_id": client_id,
+        "scope": scope,
+        "username": g.args.login,
+        "password": password,
+        "grant_type": "password",
+    }
+    rs = requests.Session() # session for getting refresh token
+    authheaders = {'Content-type': 'application/x-www-form-urlencoded'}
+    response = rs.post(g.args.auth_url + '/token', data=authdata,
+        headers=authheaders, allow_redirects=False, verify=g.args.ssl_verify)
+    token_res = response.json()
+    if response.status_code == 200:
+        save_tokens(token_res)
+        return True
+    print(f"\nStatus: {response.status_code}\n{response.text}")
+    return False
+
 def default_auth_url(realm):
     return f'https://auth.caida.org/realms/{realm}/protocol/openid-connect'
 
@@ -60,8 +81,17 @@ def save_tokens(token_info):
     os.umask(oldmask)
 
 def main():
-    parser = argparse.ArgumentParser(description=
-        "Get an offline token")
+    parser = argparse.ArgumentParser(
+        description="Get OIDC access and refresh tokens for use with "
+            "`sso_query` or another client that connects to a service "
+            "protected by OIDC.",
+        epilog="There are two authentication methods: "
+            "Device Flow (the default), where you will be instructed to "
+            "visit a URL in a browser and sign in to the authentication "
+            "system there; and Login (with the --login option), where you "
+            "will be prompted for a password locally. Most services allow "
+            "only one of these methods. After you have authenticated, SSO "
+            "tokens will be saved to TOKEN_FILE.")
     parser.add_argument("client_id",
         metavar='CLIENT_ID',
         help=f"OIDC client id (e.g. 'foobar-offline')")
@@ -76,6 +106,9 @@ def main():
     parser.add_argument("-s", "--scope",
         default=DEFAULT_SCOPE,
         help=f"Authorization scope (default: {DEFAULT_SCOPE})")
+    parser.add_argument("-l", "--login",
+        metavar='USERNAME',
+        help=f"Login as USERNAME")
     parser.add_argument("--no-verify",
         dest='ssl_verify', default=True, action='store_false',
         help=f"Disable SSL host verification")
@@ -86,7 +119,12 @@ def main():
     if g.args.auth_url is None:
         g.args.auth_url = default_auth_url(g.args.realm)
 
-    if not auth_device_flow(g.args.auth_url, g.args.client_id, g.args.scope):
+    if g.args.login:
+        auth = auth_login_flow
+    else:
+        auth = auth_device_flow
+
+    if not auth(g.args.auth_url, g.args.client_id, g.args.scope):
         sys.exit(1)
     print(f"Saved token to {g.args.token_file}")
 
