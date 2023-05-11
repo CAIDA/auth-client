@@ -51,10 +51,12 @@ def auth_device_flow(auth_url, client_id, scope):
 def default_auth_url(realm):
     return f'https://auth.caida.org/realms/{realm}/protocol/openid-connect'
 
-def save_tokens(new_token_info):
+def save_tokens(token_info):
     oldmask = os.umask(0o077)
+    if "expires_in" in token_info:
+        token_info["expires_at"] = time.time() + token_info["expires_in"]
     with open(g.args.token_file, "w") as f:
-        json.dump(new_token_info, f)
+        json.dump(token_info, f)
     os.umask(oldmask)
 
 def main():
