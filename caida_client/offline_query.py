@@ -20,6 +20,11 @@ class g: # global variables
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
+def print_exc_chain(e):
+    if e.__context__:
+        print_exc_chain(e.__context__)
+    eprint("%s: %s" % (type(e).__name__, str(e)))
+
 def default_auth_url(realm):
     return f'https://auth.caida.org/realms/{realm}/protocol/openid-connect'
 
@@ -101,7 +106,6 @@ def main():
         # value would be more reliable, but harder.)
         age = time.time() - (os.path.getmtime(g.args.token_file) - 5)
         g.token_info['expires_in'] -= age
-    eprint("### expires_in=%r" % (g.token_info['expires_in'],)) # XXX
 
     # request access token from auth server
     if manual_auth:
@@ -153,8 +157,13 @@ def main():
     # eprint("Request headers:  %r" % (headers,))
     # eprint("Request data:  %r" % (data,))
     # eprint("")
-    response = session.request(g.args.method, g.args.query, data=data,
-            headers=headers, verify=g.args.ssl_verify)
+
+    try:
+        response = session.request(g.args.method, g.args.query, data=data,
+                headers=headers, verify=g.args.ssl_verify)
+    except Exception as e:
+        print_exc_chain(e)
+        sys.exit(1)
 
     eprint("\x1b[31mHTTP response status: %r\x1b[m" % (response.status_code,))
     eprint("HTTP response headers: %r" % (response.headers,))
@@ -164,4 +173,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
