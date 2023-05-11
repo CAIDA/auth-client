@@ -2,3 +2,5 @@
 logs
 *.tok
 *.token
+*.egg-info
+venv

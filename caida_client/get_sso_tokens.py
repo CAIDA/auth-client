@@ -2,18 +2,18 @@
 # python character encoding: utf-8
 
 import sys
-import os
 import time
 import argparse
-import json
 import requests
 import getpass
+import caida_client
 
 DEFAULT_REALM = 'CAIDA'
 DEFAULT_SCOPE = "openid offline_access"
 
 class g: # global variables
     args = None
+    save_tokens = None
 
 # Prompt the user to visit a URL to create an offline token.  Then poll
 # the auth server until it's available.
@@ -44,7 +44,7 @@ def auth_device_flow(auth_url, client_id, scope):
             continue
         print()
         if response.status_code == 200:
-            save_tokens(token_res)
+            g.save_tokens(token_res)
             return True
         print(f"\nStatus: {response.status_code}\n{response.text}")
         return False
@@ -64,21 +64,13 @@ def auth_login_flow(auth_url, client_id, scope):
         headers=authheaders, allow_redirects=False, verify=g.args.ssl_verify)
     token_res = response.json()
     if response.status_code == 200:
-        save_tokens(token_res)
+        g.save_tokens(token_res)
         return True
     print(f"\nStatus: {response.status_code}\n{response.text}")
     return False
 
 def default_auth_url(realm):
     return f'https://auth.caida.org/realms/{realm}/protocol/openid-connect'
-
-def save_tokens(token_info):
-    oldmask = os.umask(0o077)
-    if "expires_at" not in token_info and "expires_in" in token_info:
-        token_info["expires_at"] = time.time() + token_info["expires_in"]
-    with open(g.args.token_file, "w") as f:
-        json.dump(token_info, f)
-    os.umask(oldmask)
 
 def main():
     parser = argparse.ArgumentParser(
@@ -118,6 +110,8 @@ def main():
         g.args.token_file = g.args.client_id + ".token"
     if g.args.auth_url is None:
         g.args.auth_url = default_auth_url(g.args.realm)
+
+    g.save_tokens = caida_client.make_save_tokens(g.args.token_file)
 
     if g.args.login:
         auth = auth_login_flow

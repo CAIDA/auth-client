@@ -4,10 +4,10 @@
 import sys
 import os
 import argparse
-import time
 import json
 import requests
 from requests_oauthlib import OAuth2Session
+import caida_client
 
 DEFAULT_SCOPE = "openid offline_access"
 DEFAULT_REALM = 'CAIDA'
@@ -16,6 +16,7 @@ manual_auth = False
 class g: # global variables
     args = None
     token_info = None
+    save_tokens = None
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -27,13 +28,6 @@ def print_exc_chain(e):
 
 def default_auth_url(realm):
     return f'https://auth.caida.org/realms/{realm}/protocol/openid-connect'
-
-def save_tokens(new_token_info):
-    oldmask = os.umask(0o077)
-    with open(g.args.token_file, "w") as f:
-        json.dump(new_token_info, f)
-    os.umask(oldmask)
-    eprint(f"### Saved new tokens to {g.args.token_file}")
 
 def main():
     parser = argparse.ArgumentParser(
@@ -76,6 +70,8 @@ def main():
         g.args.token_file = g.args.client_id + ".token"
     if g.args.auth_url is None:
         g.args.auth_url = default_auth_url(g.args.realm)
+
+    g.save_tokens = caida_client.make_save_tokens(g.args.token_file)
 
     if g.args.method in ['PUT', 'POST']:
         if g.args.data:
@@ -129,7 +125,7 @@ def main():
                 print(response.text)
                 sys.exit(1)
             g.token_info = response.json()
-            save_tokens(g.token_info)
+            g.save_tokens(g.token_info)
         else:
             eprint(f"### using stored access token")
 
@@ -144,7 +140,7 @@ def main():
                 token=g.token_info,
                 auto_refresh_url=(g.args.auth_url+'/token'),
                 auto_refresh_kwargs={'client_id':g.args.client_id},
-                token_updater=save_tokens)
+                token_updater=g.save_tokens)
 
 
     # Make the request
