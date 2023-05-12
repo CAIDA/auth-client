@@ -6,7 +6,7 @@ import time
 import argparse
 import requests
 import getpass
-import caida_client
+import caida_sso_client
 
 DEFAULT_REALM = 'CAIDA'
 DEFAULT_SCOPE = "openid offline_access"
@@ -111,7 +111,7 @@ def main():
     if g.args.auth_url is None:
         g.args.auth_url = default_auth_url(g.args.realm)
 
-    g.save_tokens = caida_client.make_save_tokens(g.args.token_file)
+    g.save_tokens = caida_sso_client.make_save_tokens(g.args.token_file)
 
     if g.args.login:
         auth = auth_login_flow
