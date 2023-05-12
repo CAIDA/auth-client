@@ -7,7 +7,7 @@ import argparse
 import json
 import requests
 from requests_oauthlib import OAuth2Session
-import caida_sso_client
+import caida_oidc_client
 
 DEFAULT_SCOPE = "openid offline_access"
 DEFAULT_REALM = 'CAIDA'
@@ -71,7 +71,7 @@ def main():
     if g.args.auth_url is None:
         g.args.auth_url = default_auth_url(g.args.realm)
 
-    g.save_tokens = caida_sso_client.make_save_tokens(g.args.token_file)
+    g.save_tokens = caida_oidc_client.make_save_tokens(g.args.token_file)
 
     if g.args.method in ['PUT', 'POST']:
         if g.args.data:

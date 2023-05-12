@@ -6,7 +6,7 @@ import time
 import argparse
 import requests
 import getpass
-import caida_sso_client
+import caida_oidc_client
 
 DEFAULT_REALM = 'CAIDA'
 DEFAULT_SCOPE = "openid offline_access"
@@ -75,7 +75,7 @@ def default_auth_url(realm):
 def main():
     parser = argparse.ArgumentParser(
         description="Get OIDC access and refresh tokens for use with "
-            "`sso_query` or another client that connects to a service "
+            "`oidc_query` or another client that connects to a service "
             "protected by OIDC.",
         epilog="There are two authentication methods: "
             "Device Flow (the default), where you will be instructed to "
@@ -111,7 +111,7 @@ def main():
     if g.args.auth_url is None:
         g.args.auth_url = default_auth_url(g.args.realm)
 
-    g.save_tokens = caida_sso_client.make_save_tokens(g.args.token_file)
+    g.save_tokens = caida_oidc_client.make_save_tokens(g.args.token_file)
 
     if g.args.login:
         auth = auth_login_flow

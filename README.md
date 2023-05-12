@@ -24,13 +24,13 @@ For more information, see the
 
 ## Usage
 
-### `get_sso_tokens`
-Get access and refresh tokens for use with `sso_query` or another client
+### `get_oidc_tokens`
+Get access and refresh tokens for use with `oidc_query` or another client
 that connects to a protected CAIDA service.
 
 Typical usage:
 ```
-get_sso_tokens $client_id
+get_oidc_tokens $client_id
 ```
 
 where `$client_id` is the client id for the service you are trying to use, e.g. `foobar-offline`.
@@ -39,14 +39,14 @@ the CAIDA SSO system.  Once you have done that, the script will store an
 access token and offline refresh token for `$client_id` in the file
 `$client_id.token`.
 
-Run `get_sso_tokens --help` for more information.
+Run `get_oidc_tokens --help` for more information.
 
-### `sso_query`
+### `oidc_query`
 Make an HTTP request to a protected CAIDA service.
 
 Typical usage:
 ```
-sso_query $client_id $service_url
+oidc_query $client_id $service_url
 ```
 where `$client_id` is the client id for the service you are trying to use, e.g. `foobar-offline`,
 and `$service_url` is the url of the service you are trying to use, e.g. `https://api.foobar.caida.org/v1/foo`.
@@ -58,7 +58,7 @@ access token in the file.
 
 The response from the service will be written to standard output, which you
 can easily redirect to a file.
-All other diagnostic output from `sso_query` will be written to standard
+All other diagnostic output from `oidc_query` will be written to standard
 error.
 
-Run `sso_query --help` for more information.
+Run `oidc_query --help` for more information.
