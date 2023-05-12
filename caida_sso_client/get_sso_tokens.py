@@ -80,9 +80,9 @@ def main():
         epilog="There are two authentication methods: "
             "Device Flow (the default), where you will be instructed to "
             "visit a URL in a browser and sign in to the authentication "
-            "system there; and Login (with the --login option), where you "
-            "will be prompted for a password locally. Most services allow "
-            "only one of these methods. After you have authenticated, SSO "
+            "system there; and Direct Access (with the --login option), where "
+            "you will be prompted for a password locally. Some services may "
+            "not allow every method. After you have authenticated, OIDC "
             "tokens will be saved to TOKEN_FILE.")
     parser.add_argument("client_id",
         metavar='CLIENT_ID',
