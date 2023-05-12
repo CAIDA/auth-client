@@ -76,7 +76,7 @@ def main():
     if g.args.method in ['PUT', 'POST']:
         if g.args.data:
             data = g.args.data
-        if g.args.datafile:
+        elif g.args.datafile:
             with open(g.args.datafile) as f:
                 data = f.read()
         else:
