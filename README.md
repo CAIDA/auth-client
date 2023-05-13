@@ -30,13 +30,13 @@ that connects to a protected CAIDA service.
 
 Typical usage:
 ```
-get_oidc_tokens $client_id
+get_oidc_tokens -o $client_id
 ```
 
 where `$client_id` is the client id for the service you are trying to use, e.g. `foobar-offline`.
 This will instruct you to visit a URL in a browser, where you can sign in to
 the CAIDA SSO system.  Once you have done that, the script will store an
-access token and offline refresh token for `$client_id` in the file
+access token and refresh token for `$client_id` in the file
 `$client_id.token`.
 
 Run `get_oidc_tokens --help` for more information.

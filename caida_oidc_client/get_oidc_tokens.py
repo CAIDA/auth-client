@@ -9,7 +9,7 @@ import getpass
 import caida_oidc_client
 
 DEFAULT_REALM = 'CAIDA'
-DEFAULT_SCOPE = "openid offline_access"
+DEFAULT_SCOPE = ['openid']
 
 class g: # global variables
     args = None
@@ -78,9 +78,9 @@ def main():
             "`oidc_query` or another client that connects to a service "
             "protected by OIDC.",
         epilog="There are two authentication methods: "
-            "Device Flow (the default), where you will be instructed to "
+            "Device Flow (without --login), where you will be instructed to "
             "visit a URL in a browser and sign in to the authentication "
-            "system there; and Direct Access (with the --login option), where "
+            "system there; and Direct Access (with --login), where "
             "you will be prompted for a password locally. Some services may "
             "not allow every method. After you have authenticated, OIDC "
             "tokens will be saved to TOKEN_FILE.")
@@ -90,17 +90,24 @@ def main():
     parser.add_argument("token_file",
         nargs='?', metavar='TOKEN_FILE',
         help="name of file to save offline token (default: {CLIENT_ID}.token)")
+    parser.add_argument("-o", "--offline",
+        dest='scope', default=DEFAULT_SCOPE,
+        action='append_const', const='offline_access',
+        help="Request 'offline' tokens that don't expire when you log out "
+            "(equivalent to `--scope offline_access`)")
+    parser.add_argument("-l", "--login",
+        metavar='USERNAME',
+        help=f"Login as USERNAME")
+    parser.add_argument("-s", "--scope",
+        action='append', default=DEFAULT_SCOPE,
+        help="Space-separated list of authorization scopes "
+            "(repeatable) "
+            f"('{' '.join(DEFAULT_SCOPE)}' will be added automatically)")
     parser.add_argument("-r", "--realm",
         default=DEFAULT_REALM,
         help=f"Authorization realm (default: {DEFAULT_REALM})")
     parser.add_argument("-a", "--auth-url",
         help=f"Authorization URL (default: {default_auth_url('{REALM}')})")
-    parser.add_argument("-s", "--scope",
-        default=DEFAULT_SCOPE,
-        help=f"Authorization scope (default: {DEFAULT_SCOPE})")
-    parser.add_argument("-l", "--login",
-        metavar='USERNAME',
-        help=f"Login as USERNAME")
     parser.add_argument("--no-verify",
         dest='ssl_verify', default=True, action='store_false',
         help=f"Disable SSL host verification")
@@ -118,7 +125,9 @@ def main():
     else:
         auth = auth_device_flow
 
-    if not auth(g.args.auth_url, g.args.client_id, g.args.scope):
+    scope = ' '.join(g.args.scope)
+
+    if not auth(g.args.auth_url, g.args.client_id, scope):
         sys.exit(1)
     print(f"Saved token to {g.args.token_file}")
 
