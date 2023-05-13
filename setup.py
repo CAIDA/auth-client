@@ -7,9 +7,9 @@ setuptools.setup(
     author='Ken Keys',
     author_email='kkeys@caida.org',
     description='Access protected CAIDA services',
-    # long_description='file: README.md',
-    # long_description_content_type='text/markdown',
-    # url='https://...',
+    long_description='file: README.md',
+    long_description_content_type='text/markdown',
+    url='https://github.com/CAIDA/auth-client',
     classifiers=[
         'Programming Language :: Python :: 3',
         'Operating System :: OS Independent',
