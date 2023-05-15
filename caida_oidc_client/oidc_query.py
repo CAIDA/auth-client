@@ -52,9 +52,16 @@ def main():
     parser.add_argument("-X", "--method", default='GET',
         help="HTTP request method (default: %(default)s)")
     parser.add_argument("-d", "--data", type=os.fsencode,
-        help="JSON request body")
+        help="request body")
     parser.add_argument("--datafile",
-        help="name of file contaning JSON request body")
+        help="name of file contaning request body")
+    parser.add_argument("-H", "--header", dest='headers',
+        nargs=2, action='append', default=list(), metavar=('NAME', 'VALUE'),
+        help="HTTP request header (repeatable)");
+    ct_json = ['Content-type', 'application/json; charset=utf-8']
+    parser.add_argument("-j", "--json", dest='headers',
+        action='append_const', const=ct_json,
+        help=f"Equivalent to -H '{ct_json[0]}' '{ct_json[1]}'")
     parser.add_argument("--no-verify", default=True,
         dest='ssl_verify', action='store_false',
         help="Disable SSL host verification")
@@ -73,6 +80,8 @@ def main():
 
     g.save_tokens = caida_oidc_client.make_save_tokens(g.args.token_file)
 
+    headers = {h[0]: h[1] for h in g.args.headers}
+
     if g.args.method in ['PUT', 'POST']:
         if g.args.data:
             data = g.args.data
@@ -83,10 +92,6 @@ def main():
             data = sys.stdin.read()
     else:
         data = None
-
-    headers = {
-        'Content-type': 'application/json; charset=utf-8'
-    }
 
     with open(g.args.token_file, "r") as f:
         g.token_info = json.load(f)
