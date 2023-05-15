@@ -37,15 +37,16 @@ def main():
             'Any other diagnostic output will be written to standard error. '
             'If method is PUT or POST, and neither --data nor --datafile '
             'are given, the request body will be read from standard input.')
+    rare = parser.add_argument_group('rarely used options')
     parser.add_argument("-t", "--token-file",
         help="name of file containing offline token (default: {CLIENT_ID}.token)")
-    parser.add_argument("--force-refresh",
+    rare.add_argument("--force-refresh",
         action='store_true',
         help="get a new access token even if the one in TOKEN_FILE is not "
             "expired (useful after an 'invalid token' error)")
-    parser.add_argument("-r", "--realm", default=DEFAULT_REALM,
+    rare.add_argument("-r", "--realm", default=DEFAULT_REALM,
         help="Authorization realm (default: %(default)s)")
-    parser.add_argument("-a", "--auth-url",
+    rare.add_argument("-a", "--auth-url",
         help=f"Authorization URL (default: {default_auth_url('{REALM}')})")
     parser.add_argument("-s", "--scope", default=DEFAULT_SCOPE,
         help="Authorization scope (default: %(default)s)")
@@ -62,7 +63,7 @@ def main():
     parser.add_argument("-j", "--json", dest='headers',
         action='append_const', const=ct_json,
         help=f"Equivalent to -H '{ct_json[0]}' '{ct_json[1]}'")
-    parser.add_argument("--no-verify", default=True,
+    rare.add_argument("--no-verify", default=True,
         dest='ssl_verify', action='store_false',
         help="Disable SSL host verification")
     parser.add_argument("client_id",

@@ -84,6 +84,7 @@ def main():
             "you will be prompted for a password locally. Some services may "
             "not allow every method. After you have authenticated, OIDC "
             "tokens will be saved to TOKEN_FILE.")
+    rare = parser.add_argument_group("rarely used options")
     parser.add_argument("client_id",
         metavar='CLIENT_ID',
         help=f"OIDC client id (e.g. 'foobar-offline')")
@@ -103,12 +104,12 @@ def main():
         help="Space-separated list of authorization scopes "
             "(repeatable) "
             f"('{' '.join(DEFAULT_SCOPE)}' will be added automatically)")
-    parser.add_argument("-r", "--realm",
+    rare.add_argument("-r", "--realm",
         default=DEFAULT_REALM,
         help=f"Authorization realm (default: {DEFAULT_REALM})")
-    parser.add_argument("-a", "--auth-url",
+    rare.add_argument("-a", "--auth-url",
         help=f"Authorization URL (default: {default_auth_url('{REALM}')})")
-    parser.add_argument("--no-verify",
+    rare.add_argument("--no-verify",
         dest='ssl_verify', default=True, action='store_false',
         help=f"Disable SSL host verification")
     g.args = parser.parse_args()
