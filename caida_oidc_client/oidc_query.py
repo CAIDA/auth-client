@@ -9,7 +9,6 @@ import requests
 from requests_oauthlib import OAuth2Session
 import caida_oidc_client
 
-DEFAULT_SCOPE = "openid offline_access"
 DEFAULT_REALM = 'CAIDA'
 manual_auth = False
 
@@ -48,8 +47,6 @@ def main():
         help="Authorization realm (default: %(default)s)")
     rare.add_argument("-a", "--auth-url",
         help=f"Authorization URL (default: {default_auth_url('{REALM}')})")
-    parser.add_argument("-s", "--scope", default=DEFAULT_SCOPE,
-        help="Authorization scope (default: %(default)s)")
     parser.add_argument("-X", "--method", default='GET',
         help="HTTP request method (default: %(default)s)")
     parser.add_argument("-d", "--data", type=os.fsencode,
@@ -119,7 +116,6 @@ def main():
             authdata = {
                 "client_id": g.args.client_id,
                 "refresh_token": g.token_info['refresh_token'],
-                "scope": g.args.scope,
                 "grant_type": "refresh_token",
             }
 
