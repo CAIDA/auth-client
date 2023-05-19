@@ -6,6 +6,7 @@ import os
 import time
 import argparse
 import json
+import binascii
 import requests
 from requests_oauthlib import OAuth2Session
 import caida_oidc_client
@@ -26,8 +27,10 @@ def print_exc_chain(e):
         print_exc_chain(e.__context__)
     eprint("%s: %s" % (type(e).__name__, str(e)))
 
-def default_auth_url(realm):
-    return f'https://auth.caida.org/realms/{realm}/protocol/openid-connect'
+def jwt_decode(jwt):
+    code = jwt.split(".")[1]
+    code += "="*((4-len(code))%4) # add padding needed by binascii
+    return json.loads(binascii.a2b_base64(code))
 
 def main():
     parser = argparse.ArgumentParser(
@@ -46,8 +49,6 @@ def main():
             "expired (useful after an 'invalid token' error)")
     rare.add_argument("-r", "--realm", default=DEFAULT_REALM,
         help="Authorization realm (default: %(default)s)")
-    rare.add_argument("-a", "--auth-url",
-        help=f"Authorization URL (default: {default_auth_url('{REALM}')})")
     parser.add_argument("-X", "--method", default='GET',
         help="HTTP request method (default: %(default)s)")
     parser.add_argument("-d", "--data", type=os.fsencode,
@@ -74,8 +75,6 @@ def main():
 
     if g.args.token_file is None:
         g.args.token_file = g.args.client_id + ".token"
-    if g.args.auth_url is None:
-        g.args.auth_url = default_auth_url(g.args.realm)
 
     g.save_tokens = caida_oidc_client.make_save_tokens(g.args.token_file)
 
@@ -102,6 +101,9 @@ def main():
         g.token_info['expires_in'] = -1
         g.token_info['access_token'] = 'dummy value for oauthlib'
 
+    g.token_url = jwt_decode(g.token_info['refresh_token'])["iss"] + \
+        '/protocol/openid-connect/token'
+
     # request access token from auth server
     if manual_auth:
         # Manual method, for when requests-oauthlib isn't available, as a model
@@ -122,7 +124,7 @@ def main():
             }
 
             authheaders = {'Content-type': 'application/x-www-form-urlencoded'}
-            response = session.post(g.args.auth_url + '/token', data=authdata,
+            response = session.post(g.token_url, data=authdata,
                 headers=authheaders, allow_redirects=False)
 
             if response.status_code < 200 or response.status_code > 299:
@@ -142,7 +144,7 @@ def main():
 
         session = OAuth2Session(client_id=g.args.client_id,
                 token=g.token_info,
-                auto_refresh_url=(g.args.auth_url+'/token'),
+                auto_refresh_url=g.token_url,
                 auto_refresh_kwargs={'client_id':g.args.client_id},
                 token_updater=g.save_tokens)
 
