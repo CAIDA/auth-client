@@ -3,6 +3,7 @@
 
 import sys
 import os
+import time
 import argparse
 import json
 import requests
@@ -93,7 +94,8 @@ def main():
 
     with open(g.args.token_file, "r") as f:
         g.token_info = json.load(f)
-    if g.args.force_refresh or 'expires_at' not in g.token_info:
+    if (g.args.force_refresh or 'expires_at' not in g.token_info or
+            g.token_info['expires_at'] < time.time()):
         refresh_token = g.token_info['refresh_token']
         g.token_info.clear()
         g.token_info['refresh_token'] = refresh_token
