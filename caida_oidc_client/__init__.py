@@ -1,5 +1,5 @@
 """Tools for accessing protected CAIDA services"""
 
-__version__ = "0.2"
+__version__ = "0.3"
 
-from .lib import make_save_tokens
+from .lib import make_save_tokens, jwt_decode

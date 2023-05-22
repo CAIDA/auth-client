@@ -6,7 +6,6 @@ import os
 import time
 import argparse
 import json
-import binascii
 import requests
 from requests_oauthlib import OAuth2Session
 import caida_oidc_client
@@ -26,11 +25,6 @@ def print_exc_chain(e):
     if e.__context__:
         print_exc_chain(e.__context__)
     eprint("%s: %s" % (type(e).__name__, str(e)))
-
-def jwt_decode(jwt):
-    code = jwt.split(".")[1]
-    code += "="*((4-len(code))%4) # add padding needed by binascii
-    return json.loads(binascii.a2b_base64(code))
 
 def main():
     parser = argparse.ArgumentParser(
@@ -101,8 +95,8 @@ def main():
         g.token_info['expires_in'] = -1
         g.token_info['access_token'] = 'dummy value for oauthlib'
 
-    g.token_url = jwt_decode(g.token_info['refresh_token'])["iss"] + \
-        '/protocol/openid-connect/token'
+    refresh_data = caida_oidc_client.jwt_decode(g.token_info['refresh_token'])
+    g.token_url = refresh_data["iss"] + '/protocol/openid-connect/token'
 
     # request access token from auth server
     if manual_auth:
