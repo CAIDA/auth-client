@@ -16,7 +16,7 @@ source /path/to/new/virtual/environment/bin/activate
 
 ### 2. Install this package
 ```
-python3 -m pip install git+https://github.com/CAIDA/auth/client.git
+python3 -m pip install git+https://github.com/CAIDA/auth-client.git
 ```
 
 For more information, see the
