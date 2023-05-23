@@ -13,20 +13,24 @@ import caida_oidc_client
 DEFAULT_REALM = 'CAIDA'
 manual_auth = False
 
-class g: # global variables
+class g: # pylint: disable=invalid-name, too-few-public-methods
+    """global variables"""
     args = None
-    token_info = None
+    token_info = {}
     save_tokens = None
 
 def eprint(*args, **kwargs):
+    """print() to stderr"""
     print(*args, file=sys.stderr, **kwargs)
 
-def print_exc_chain(e):
-    if e.__context__:
-        print_exc_chain(e.__context__)
-    eprint("%s: %s" % (type(e).__name__, str(e)))
+def print_exc_chain(exc):
+    """Print a chain of exceptions (without a stack trace)"""
+    if exc.__context__:
+        print_exc_chain(exc.__context__)
+    eprint(f"{type(exc).__name__}: {str(exc)}")
 
 def main():
+    """Main"""
     parser = argparse.ArgumentParser(
         description='Make a request to a protected CAIDA service.',
         epilog=
@@ -50,8 +54,8 @@ def main():
     parser.add_argument("--datafile",
         help="name of file contaning request body")
     parser.add_argument("-H", "--header", dest='headers',
-        nargs=2, action='append', default=list(), metavar=('NAME', 'VALUE'),
-        help="HTTP request header (repeatable)");
+        nargs=2, action='append', default=[], metavar=('NAME', 'VALUE'),
+        help="HTTP request header (repeatable)")
     ct_json = ['Content-type', 'application/json; charset=utf-8']
     parser.add_argument("-j", "--json", dest='headers',
         action='append_const', const=ct_json,
@@ -78,14 +82,14 @@ def main():
         if g.args.data:
             data = g.args.data
         elif g.args.datafile:
-            with open(g.args.datafile) as f:
+            with open(g.args.datafile, encoding="utf8") as f:
                 data = f.read()
         else:
             data = sys.stdin.read()
     else:
         data = None
 
-    with open(g.args.token_file, "r") as f:
+    with open(g.args.token_file, "r", encoding="ascii") as f:
         g.token_info = json.load(f)
     if (g.args.force_refresh or 'expires_at' not in g.token_info or
             g.token_info['expires_at'] < time.time()):
@@ -109,8 +113,8 @@ def main():
         # if it expires.
         session = requests.Session()
 
-        if not 'access_token' in g.token_info or g.token_info['expires_in'] <= 0:
-            eprint(f"### getting new access token")
+        if 'access_token' not in g.token_info or g.token_info['expires_in'] <= 0:
+            eprint("### getting new access token")
             authdata = {
                 "client_id": g.args.client_id,
                 "refresh_token": g.token_info['refresh_token'],
@@ -127,7 +131,7 @@ def main():
             g.token_info = response.json()
             g.save_tokens(g.token_info)
         else:
-            eprint(f"### using stored access token")
+            eprint("### using stored access token")
 
         headers['Authorization'] = f'Bearer {g.token_info["access_token"]}'
 
@@ -151,12 +155,12 @@ def main():
     try:
         response = session.request(g.args.method, g.args.query, data=data,
                 headers=headers, verify=g.args.ssl_verify)
-    except Exception as e:
+    except Exception as e: # pylint: disable=broad-except
         print_exc_chain(e)
         sys.exit(1)
 
-    eprint("\x1b[31mHTTP response status: %r\x1b[m" % (response.status_code,))
-    eprint("HTTP response headers: %r" % (response.headers,))
+    eprint(f"\x1b[31mHTTP response status: {repr(response.status_code)}\x1b[m")
+    eprint(f"HTTP response headers: {repr(response.headers)}")
     eprint("HTTP response text:")
     sys.stderr.flush()
     print(response.text)

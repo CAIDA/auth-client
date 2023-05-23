@@ -4,20 +4,23 @@
 import sys
 import time
 import argparse
-import requests
 import getpass
+import requests
 import caida_oidc_client
 
 DEFAULT_REALM = 'CAIDA'
 DEFAULT_SCOPE = ['openid']
 
-class g: # global variables
+class g: # pylint: disable=invalid-name, too-few-public-methods
+    """global variables"""
     args = None
     save_tokens = None
 
-# Prompt the user to visit a URL to create an offline token.  Then poll
-# the auth server until it's available.
 def auth_device_flow(auth_url, client_id, scope):
+    """
+    Prompt the user to visit a URL to create an offline token.  Then poll
+    the auth server until it's available.
+    """
     rs = requests.Session() # session for getting refresh token
     response = rs.post(auth_url + "/auth/device",
         data={ "client_id": client_id, "scope": scope },
@@ -73,6 +76,7 @@ def default_auth_url(realm):
     return f'https://auth.caida.org/realms/{realm}/protocol/openid-connect'
 
 def main():
+    """Main"""
     parser = argparse.ArgumentParser(
         description="Get OIDC access and refresh tokens for use with "
             "`oidc_query` or another client that connects to a service "
@@ -87,7 +91,7 @@ def main():
     rare = parser.add_argument_group("rarely used options")
     parser.add_argument("client_id",
         metavar='CLIENT_ID',
-        help=f"OIDC client id (e.g. 'foobar-offline')")
+        help="OIDC client id (e.g. 'foobar-offline')")
     parser.add_argument("token_file",
         nargs='?', metavar='TOKEN_FILE',
         help="name of file to save offline token (default: {CLIENT_ID}.token)")
@@ -98,7 +102,7 @@ def main():
             "(equivalent to `--scope offline_access`)")
     parser.add_argument("-l", "--login",
         metavar='USERNAME',
-        help=f"Login as USERNAME")
+        help="Login as USERNAME")
     parser.add_argument("-s", "--scope",
         action='append', default=DEFAULT_SCOPE,
         help="Space-separated list of authorization scopes "
@@ -111,7 +115,7 @@ def main():
         help=f"Authorization URL (default: {default_auth_url('{REALM}')})")
     rare.add_argument("--no-verify",
         dest='ssl_verify', default=True, action='store_false',
-        help=f"Disable SSL host verification")
+        help="Disable SSL host verification")
     g.args = parser.parse_args()
 
     if g.args.token_file is None:
@@ -134,4 +138,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

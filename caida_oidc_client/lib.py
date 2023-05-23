@@ -12,7 +12,7 @@ def make_save_tokens(token_file):
         logging.info("### Saving new tokens to %s", token_file)
         oldmask = os.umask(0o077)
         try:
-            with open(token_file, "w") as f:
+            with open(token_file, "w", encoding="ascii") as f:
                 json.dump(token_info, f)
         except OSError as e:
             logging.warning("Failed to save new tokens: %s: %s",
