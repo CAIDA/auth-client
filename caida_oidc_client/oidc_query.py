@@ -35,9 +35,7 @@ def main():
         description='Make a request to a protected CAIDA service.',
         epilog=
             'The response from the service will be written to standard output. '
-            'Any other diagnostic output will be written to standard error. '
-            'If method is PUT or POST, and neither --data nor --datafile '
-            'are given, the request body will be read from standard input.')
+            'Any other diagnostic output will be written to standard error. ')
     rare = parser.add_argument_group('rarely used options')
     parser.add_argument("-t", "--token-file",
         help="name of file containing offline token (default: {CLIENT_ID}.token)")
@@ -52,7 +50,7 @@ def main():
     parser.add_argument("-d", "--data", type=os.fsencode,
         help="request body")
     parser.add_argument("--datafile",
-        help="name of file contaning request body")
+        help="name of file contaning request body, or '-' for standard input")
     parser.add_argument("-H", "--header", dest='headers',
         nargs=2, action='append', default=[], metavar=('NAME', 'VALUE'),
         help="HTTP request header (repeatable)")
@@ -78,16 +76,15 @@ def main():
 
     headers = {h[0]: h[1] for h in g.args.headers}
 
+    data = None
     if g.args.method in ['PUT', 'POST']:
-        if g.args.data:
+        if g.args.data is not None:
             data = g.args.data
-        elif g.args.datafile:
+        elif g.args.datafile == '-':
+            data = sys.stdin.read()
+        elif g.args.datafile is not None:
             with open(g.args.datafile, encoding="utf8") as f:
                 data = f.read()
-        else:
-            data = sys.stdin.read()
-    else:
-        data = None
 
     with open(g.args.token_file, "r", encoding="ascii") as f:
         g.token_info = json.load(f)
