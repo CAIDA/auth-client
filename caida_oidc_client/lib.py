@@ -8,7 +8,11 @@ def make_save_tokens(token_file):
     """Return a save_tokens() function for the given filename."""
     def save_tokens(token_info):
         if "expires_at" not in token_info and "expires_in" in token_info:
-            token_info["expires_at"] = time.time() + token_info["expires_in"]
+            try:
+                issued_at = jwt_decode(token_info["access_token"])["iat"]
+            except Exception:
+                issued_at = int(time.time()) - 1
+            token_info["expires_at"] = issued_at + token_info["expires_in"]
         logging.info("### Saving new tokens to %s", token_file)
         oldmask = os.umask(0o077)
         try:
