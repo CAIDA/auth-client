@@ -18,7 +18,7 @@ class g: # pylint: disable=invalid-name, too-few-public-methods
 
 def auth_device_flow(auth_url, client_id, scope):
     """
-    Prompt the user to visit a URL to create an offline token.  Then poll
+    Prompt the user to visit a URL to create a refresh token.  Then poll
     the auth server until it's available.
     """
     rs = requests.Session() # session for getting refresh token
@@ -29,7 +29,9 @@ def auth_device_flow(auth_url, client_id, scope):
         print(f"\nStatus: {response.status_code}\n{response.text}")
         return False
     dev_res = response.json()
-    print("\nTo authorize the creation of an offline token, "
+    tokentype = "an offline refresh" if "offline_access" in g.args.scope \
+            else "a refresh"
+    print(f"\nTo authorize the creation of {tokentype} token, "
             "use any web browser on any device to visit:\n   ",
             dev_res['verification_uri_complete'])
     print("\nWaiting for authorization...", end="", flush=True)
@@ -94,7 +96,7 @@ def main():
         help="OIDC client id (e.g. 'foobar-offline')")
     parser.add_argument("token_file",
         nargs='?', metavar='TOKEN_FILE',
-        help="name of file to save offline token (default: {CLIENT_ID}.token)")
+        help="name of file to save tokens (default: {CLIENT_ID}.token)")
     parser.add_argument("-o", "--offline",
         dest='scope', default=DEFAULT_SCOPE,
         action='append_const', const='offline_access',
@@ -132,9 +134,13 @@ def main():
 
     scope = ' '.join(g.args.scope)
 
-    if not auth(g.args.auth_url, g.args.client_id, scope):
-        sys.exit(1)
-    print(f"Saved token to {g.args.token_file}")
+    try:
+        if auth(g.args.auth_url, g.args.client_id, scope):
+            print(f"Saved token to {g.args.token_file}")
+            sys.exit(0)
+    except KeyboardInterrupt:
+        pass
+    sys.exit(1)
 
 if __name__ == '__main__':
     main()
