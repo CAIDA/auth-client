@@ -10,7 +10,7 @@ def make_save_tokens(token_file):
         if "expires_at" not in token_info:
             try:
                 token_info["expires_at"] = jwt_decode(token_info["access_token"])["exp"]
-            except Exception as e:
+            except (TypeError, KeyError):
                 if "expires_in" in token_info:
                     token_info["expires_at"] = int(time.time()) - 1 + token_info["expires_in"]
         logging.info("### Saving new tokens to %s", token_file)

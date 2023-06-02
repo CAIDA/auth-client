@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # python character encoding: utf-8
+"""Get OIDC refresh and access tokens"""
 
 import sys
 import time
 import argparse
 import getpass
+from collections.abc import Callable
 import requests
 import caida_oidc_client
 
@@ -14,7 +16,7 @@ DEFAULT_SCOPE = ['openid']
 class g: # pylint: disable=invalid-name, too-few-public-methods
     """global variables"""
     args = None
-    save_tokens = None
+    save_tokens: Callable
 
 def auth_device_flow(auth_url, client_id, scope):
     """
@@ -55,6 +57,9 @@ def auth_device_flow(auth_url, client_id, scope):
         return False
 
 def auth_login_flow(auth_url, client_id, scope):
+    """
+    Prompt the user for a password and execute a Direct Access.
+    """
     password = getpass.getpass(prompt=f'Password for {g.args.login} at {g.args.realm}: ')
     authdata = {
         "client_id": client_id,
@@ -65,7 +70,7 @@ def auth_login_flow(auth_url, client_id, scope):
     }
     rs = requests.Session() # session for getting refresh token
     authheaders = {'Content-type': 'application/x-www-form-urlencoded'}
-    response = rs.post(g.args.auth_url + '/token', data=authdata,
+    response = rs.post(auth_url + '/token', data=authdata,
         headers=authheaders, allow_redirects=False, verify=g.args.ssl_verify)
     token_res = response.json()
     if response.status_code == 200:

@@ -17,7 +17,6 @@ class g: # pylint: disable=invalid-name, too-few-public-methods
     """global variables"""
     args = None
     token_info = {}
-    save_tokens = None
 
 def eprint(*args, **kwargs):
     """print() to stderr"""
@@ -29,8 +28,8 @@ def print_exc_chain(exc):
         print_exc_chain(exc.__context__)
     eprint(f"{type(exc).__name__}: {str(exc)}")
 
-def main():
-    """Main"""
+def parse_args():
+    """Parse command line arguments"""
     parser = argparse.ArgumentParser(
         description='Make a request to a protected CAIDA service.',
         epilog=
@@ -72,7 +71,11 @@ def main():
     if g.args.token_file is None:
         g.args.token_file = g.args.client_id + ".token"
 
-    g.save_tokens = caida_oidc_client.make_save_tokens(g.args.token_file)
+def main():
+    """Main"""
+    parse_args()
+
+    save_tokens = caida_oidc_client.make_save_tokens(g.args.token_file)
 
     headers = {h[0]: h[1] for h in g.args.headers}
 
@@ -126,7 +129,7 @@ def main():
                 print(response.text)
                 sys.exit(1)
             g.token_info = response.json()
-            g.save_tokens(g.token_info)
+            save_tokens(g.token_info)
         else:
             eprint("### using stored access token")
 
@@ -141,7 +144,7 @@ def main():
                 token=g.token_info,
                 auto_refresh_url=g.token_url,
                 auto_refresh_kwargs={'client_id':g.args.client_id},
-                token_updater=g.save_tokens)
+                token_updater=save_tokens)
 
 
     # Make the request
