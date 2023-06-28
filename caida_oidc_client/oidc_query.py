@@ -42,8 +42,6 @@ def parse_args():
         action='store_true',
         help="get a new access token even if the one in TOKEN_FILE is not "
             "expired (useful after an 'invalid token' error)")
-    rare.add_argument("-r", "--realm", default=DEFAULT_REALM,
-        help="Authorization realm (default: %(default)s)")
     parser.add_argument("-X", "--method", default='GET',
         help="HTTP request method (default: %(default)s)")
     parser.add_argument("-d", "--data", type=os.fsencode,
