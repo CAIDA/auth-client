@@ -96,7 +96,9 @@ def main():
             "you will be prompted for a password locally. Some services may "
             "not allow every method. After you have authenticated, OIDC "
             "tokens will be saved to TOKEN_FILE.")
-    rare = parser.add_argument_group("rarely used options")
+
+    parser.add_argument("--version", action='version',
+        version=caida_oidc_client.__version__)
     parser.add_argument("client_id",
         metavar='CLIENT_ID',
         help="OIDC client id (e.g. 'foobar-offline')")
@@ -116,6 +118,8 @@ def main():
         help="Space-separated list of authorization scopes "
             "(repeatable) "
             f"('{' '.join(DEFAULT_SCOPE)}' will be added automatically)")
+
+    rare = parser.add_argument_group("rarely used options")
     rare.add_argument("-r", "--realm",
         default=DEFAULT_REALM,
         help=f"Authorization realm (default: {DEFAULT_REALM})")

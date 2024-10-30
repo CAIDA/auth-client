@@ -35,13 +35,10 @@ def parse_args():
         epilog=
             'The response from the service will be written to standard output. '
             'Any other diagnostic output will be written to standard error. ')
-    rare = parser.add_argument_group('rarely used options')
+    parser.add_argument("--version", action='version',
+        version=caida_oidc_client.__version__)
     parser.add_argument("-t", "--token-file",
         help="name of file containing offline token (default: {CLIENT_ID}.token)")
-    rare.add_argument("--force-refresh",
-        action='store_true',
-        help="get a new access token even if the one in TOKEN_FILE is not "
-            "expired (useful after an 'invalid token' error)")
     parser.add_argument("-X", "--method", default='GET',
         help="HTTP request method (default: %(default)s)")
     parser.add_argument("-d", "--data", type=os.fsencode,
@@ -55,15 +52,20 @@ def parse_args():
     parser.add_argument("-j", "--json", dest='headers',
         action='append_const', const=ct_json,
         help=f"Equivalent to -H '{ct_json[0]}' '{ct_json[1]}'")
-    rare.add_argument("-k", "--no-verify", default=True,
-        dest='ssl_verify', action='store_false',
-        help="Disable SSL host verification")
     parser.add_argument("client_id",
         metavar="CLIENT_ID",
         help="OIDC client id (e.g. 'foobar-offline')")
     parser.add_argument("query",
         metavar="QUERY",
         help="Query URL (e.g. 'https://api.foobar.caida.org/v1/foo')")
+    rare = parser.add_argument_group('rarely used options')
+    rare.add_argument("--force-refresh",
+        action='store_true',
+        help="get a new access token even if the one in TOKEN_FILE is not "
+            "expired (useful after an 'invalid token' error)")
+    rare.add_argument("-k", "--no-verify", default=True,
+        dest='ssl_verify', action='store_false',
+        help="Disable SSL host verification")
     g.args = parser.parse_args()
 
     if g.args.token_file is None:
