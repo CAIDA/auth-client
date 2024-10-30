@@ -1,0 +1,6 @@
+[tool.pylint.basic]
+
+# The default config requires at least 3 characters; we allow shorter.
+attr-rgx     = ^[a-z][a-z0-9]*(_[a-z0-9]+)*$
+argument-rgx = ^[a-z_][a-z0-9]*(_[a-z0-9]+)*$
+variable-rgx = ^[a-z][a-z0-9]*(_[a-z0-9]+)*$

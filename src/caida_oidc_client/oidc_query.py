@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 # python character encoding: utf-8
+"""Make an HTTP request to an OIDC-protected service."""
+
+from typing import Any, Dict
 
 import sys
 import os
@@ -11,24 +14,25 @@ from requests_oauthlib import OAuth2Session
 import caida_oidc_client
 
 DEFAULT_REALM = 'CAIDA'
-manual_auth = False
+MANUAL_AUTH = False
 
 class g: # pylint: disable=invalid-name, too-few-public-methods
     """global variables"""
-    args = None
-    token_info = {}
+    args: argparse.Namespace
+    token_info: Dict[str, Any] = {}
+    token_url: str
 
-def eprint(*args, **kwargs):
+def eprint(*args:Any, **kwargs:Any) -> None:
     """print() to stderr"""
     print(*args, file=sys.stderr, **kwargs)
 
-def print_exc_chain(exc):
+def print_exc_chain(exc:BaseException) -> None:
     """Print a chain of exceptions (without a stack trace)"""
     if exc.__context__:
         print_exc_chain(exc.__context__)
     eprint(f"{type(exc).__name__}: {str(exc)}")
 
-def parse_args():
+def parse_args() -> None:
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(
         description='Make a request to a protected CAIDA service.',
@@ -71,7 +75,7 @@ def parse_args():
     if g.args.token_file is None:
         g.args.token_file = g.args.client_id + ".token"
 
-def main():
+def main() -> None:
     """Main"""
     parse_args()
 
@@ -103,7 +107,7 @@ def main():
     g.token_url = refresh_data["iss"] + '/protocol/openid-connect/token'
 
     # request access token from auth server
-    if manual_auth:
+    if MANUAL_AUTH:
         # Manual method, for when requests-oauthlib isn't available, as a model
         # for other languages, or for educational purposes.  We use the refresh
         # token once up front to get an access token.  This is fine if we only

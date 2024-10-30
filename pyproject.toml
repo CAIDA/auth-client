@@ -26,3 +26,6 @@ version = {attr = "caida_oidc_client.__version__"}
 [project.scripts]
 get_oidc_tokens = "caida_oidc_client.get_oidc_tokens:main"
 oidc_query = "caida_oidc_client.oidc_query:main"
+
+[tool.setuptools.package-data]
+caida_oidc_client = ["py.typed"]

@@ -2,6 +2,8 @@
 # python character encoding: utf-8
 """Get OIDC refresh and access tokens"""
 
+from typing import Dict, Any
+
 import sys
 import time
 import argparse
@@ -15,10 +17,10 @@ DEFAULT_SCOPE = ['openid']
 
 class g: # pylint: disable=invalid-name, too-few-public-methods
     """global variables"""
-    args = None
-    save_tokens: Callable
+    args: argparse.Namespace
+    save_tokens: Callable[[Dict[str, Any]], None]
 
-def auth_device_flow(auth_url, client_id, scope):
+def auth_device_flow(auth_url: str, client_id: str, scope: str) -> bool:
     """
     Prompt the user to visit a URL to create a refresh token.  Then poll
     the auth server until it's available.
@@ -57,7 +59,7 @@ def auth_device_flow(auth_url, client_id, scope):
         print(f"\nStatus: {response.status_code}\n{response.text}")
         return False
 
-def auth_login_flow(auth_url, client_id, scope):
+def auth_login_flow(auth_url: str, client_id: str, scope: str) -> bool:
     """
     Prompt the user for a password and execute a Direct Access.
     """
@@ -80,10 +82,11 @@ def auth_login_flow(auth_url, client_id, scope):
     print(f"\nStatus: {response.status_code}\n{response.text}")
     return False
 
-def default_auth_url(realm):
+def default_auth_url(realm: str) -> str:
+    """Get the default auth url for relam."""
     return f'https://auth.caida.org/realms/{realm}/protocol/openid-connect'
 
-def main():
+def main() -> None:
     """Main"""
     parser = argparse.ArgumentParser(
         description="Get OIDC access and refresh tokens for use with "
