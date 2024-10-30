@@ -36,6 +36,7 @@ def auth_device_flow(auth_url, client_id, scope):
     print(f"\nTo authorize the creation of {tokentype} token, "
             "use any web browser on any device to visit:\n   ",
             dev_res['verification_uri_complete'])
+    print("\nYou will be prompted to log in if you are not already logged in.")
     print("\nWaiting for authorization...", end="", flush=True)
     while True:
         time.sleep(dev_res['interval'])
