@@ -55,7 +55,7 @@ def parse_args():
     parser.add_argument("-j", "--json", dest='headers',
         action='append_const', const=ct_json,
         help=f"Equivalent to -H '{ct_json[0]}' '{ct_json[1]}'")
-    rare.add_argument("--no-verify", default=True,
+    rare.add_argument("-k", "--no-verify", default=True,
         dest='ssl_verify', action='store_false',
         help="Disable SSL host verification")
     parser.add_argument("client_id",

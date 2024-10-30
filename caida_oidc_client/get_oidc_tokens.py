@@ -121,7 +121,7 @@ def main():
         help=f"Authorization realm (default: {DEFAULT_REALM})")
     rare.add_argument("-a", "--auth-url",
         help=f"Authorization URL (default: {default_auth_url('{REALM}')})")
-    rare.add_argument("--no-verify",
+    rare.add_argument("-k", "--no-verify",
         dest='ssl_verify', default=True, action='store_false',
         help="Disable SSL host verification")
     g.args = parser.parse_args()
