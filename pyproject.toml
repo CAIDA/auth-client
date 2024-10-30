@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "caida_oidc_client"
+dynamic = ["version"]
+authors = [
+    { name="Ken Keys", email="kkeys@caida.org" },
+]
+description = "Access protected CAIDA services"
+readme = "README.md"
+requires-python = ">=3.6"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    # "License :: ...",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "requests_oauthlib",
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "caida_oidc_client.__version__"}
+
+[project.scripts]
+get_oidc_tokens = "caida_oidc_client.get_oidc_tokens:main"
+oidc_query = "caida_oidc_client.oidc_query:main"
