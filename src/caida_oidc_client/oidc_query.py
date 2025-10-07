@@ -84,14 +84,13 @@ def main() -> None:
     headers = {h[0]: h[1] for h in g.args.headers}
 
     data = None
-    if g.args.method in ['PUT', 'POST']:
-        if g.args.data is not None:
-            data = g.args.data
-        elif g.args.datafile == '-':
-            data = sys.stdin.read()
-        elif g.args.datafile is not None:
-            with open(g.args.datafile, encoding="utf8") as f:
-                data = f.read()
+    if g.args.data is not None:
+        data = g.args.data
+    elif g.args.datafile == '-':
+        data = sys.stdin.read()
+    elif g.args.datafile is not None:
+        with open(g.args.datafile, encoding="utf8") as f:
+            data = f.read()
 
     with open(g.args.token_file, "r", encoding="ascii") as f:
         g.token_info = json.load(f)
