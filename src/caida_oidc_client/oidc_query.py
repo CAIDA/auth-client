@@ -128,7 +128,7 @@ def main() -> None:
             response = session.post(g.token_url, data=authdata,
                 headers=authheaders, allow_redirects=False)
 
-            if response.status_code < 200 or response.status_code > 299:
+            if not response.ok:
                 print(response.text)
                 sys.exit(1)
             g.token_info = response.json()
@@ -164,9 +164,10 @@ def main() -> None:
 
     eprint(f"\x1b[31mHTTP response status: {repr(response.status_code)}\x1b[m")
     eprint(f"HTTP response headers: {repr(response.headers)}")
-    eprint("HTTP response text:")
+    eprint("")
     sys.stderr.flush()
     print(response.text)
+    sys.exit(0 if response.ok else 1)
 
 if __name__ == '__main__':
     main()
